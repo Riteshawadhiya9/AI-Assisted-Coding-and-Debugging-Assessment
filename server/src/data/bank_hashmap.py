@@ -1,0 +1,536 @@
+# HashMap & HashSet Debugging Problems (6 Questions: C, C++, Java)
+
+HASHMAP_QUESTIONS = [
+    {
+        "id": "q_hash_two_sum",
+        "title": "Two Sum (Hash Map Lookup)",
+        "problemStatement": "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
+        "topic": "hashmap",
+        "subtopic": "hashmap",
+        "difficulty": "easy",
+        "estimatedTime": 15,
+        "primaryBugType": "logical",
+        "bugConcept": "Inserting current element into hash map BEFORE searching for complement, allowing element to pair with itself",
+        "intendedApproach": "For each element nums[i], calculate complement = target - nums[i]. Check if complement exists in hash table; if found, return [map[complement], i]. Otherwise insert nums[i] -> i into the hash table.",
+        "explanation": "If `nums[i]` is inserted into the hash table before checking for the complement, when `nums[i] * 2 == target` (e.g. target=6, nums[0]=3), the algorithm finds the same index 0 and outputs [0, 0], violating the rule that each element cannot be used twice.",
+        "constraints": [
+            "2 <= nums.length <= 10^4",
+            "-10^9 <= nums[i] <= 10^9",
+            "-10^9 <= target <= 10^9",
+            "Only one valid answer exists.",
+        ],
+        "visibleTestCases": [
+            {
+                "id": 1,
+                "input": "nums = [2,7,11,15], target = 9",
+                "expectedOutput": "[0,1]",
+                "isHidden": False,
+                "explanation": "Because nums[0] + nums[1] == 9, we return [0, 1].",
+            },
+            {
+                "id": 2,
+                "input": "nums = [3,2,4], target = 6",
+                "expectedOutput": "[1,2]",
+                "isHidden": False,
+                "explanation": "Because nums[1] + nums[2] == 6, we return [1, 2].",
+            },
+        ],
+        "hiddenTestCases": [
+            {
+                "id": 3,
+                "input": "nums = [3,3], target = 6",
+                "expectedOutput": "[0,1]",
+                "isHidden": True,
+            },
+            {
+                "id": 4,
+                "input": "nums = [1,5,3,7], target = 12",
+                "expectedOutput": "[1,3]",
+                "isHidden": True,
+            },
+            {
+                "id": 5,
+                "input": "nums = [-3,4,3,90], target = 0",
+                "expectedOutput": "[0,2]",
+                "isHidden": True,
+            },
+        ],
+        "expectedComplexity": {
+            "time": "O(N)",
+            "space": "O(N)",
+        },
+        "tags": [
+            "hashmap",
+            "arrays",
+            "easy",
+        ],
+        "visualData": {
+            "type": "array",
+            "title": "Lookup Complement in Map",
+            "data": [
+                2,
+                7,
+                11,
+                15,
+            ],
+        },
+        "implementations": {
+            "c": {
+                "buggyCode": "#include <stdlib.h>\n\nstruct HashNode { int key; int val; struct HashNode* next; };\n\nvoid twoSum(int* nums, int n, int target, int* out1, int* out2) {\n    int bucketSize = 10007;\n    struct HashNode** table = (struct HashNode**)calloc(bucketSize, sizeof(struct HashNode*));\n    for (int i = 0; i < n; i++) {\n        int hash = abs(nums[i]) % bucketSize;\n        struct HashNode* newNode = (struct HashNode*)malloc(sizeof(struct HashNode));\n        newNode->key = nums[i]; newNode->val = i; newNode->next = table[hash];\n        table[hash] = newNode;\n\n        int comp = target - nums[i];\n        int compHash = abs(comp) % bucketSize;\n        struct HashNode* curr = table[compHash];\n        while (curr) {\n            if (curr->key == comp) {\n                *out1 = curr->val;\n                *out2 = i;\n                return;\n            }\n            curr = curr->next;\n        }\n    }\n}",
+                "correctCode": "#include <stdlib.h>\n\nstruct HashNode { int key; int val; struct HashNode* next; };\n\nvoid twoSum(int* nums, int n, int target, int* out1, int* out2) {\n    int bucketSize = 10007;\n    struct HashNode** table = (struct HashNode**)calloc(bucketSize, sizeof(struct HashNode*));\n    for (int i = 0; i < n; i++) {\n        int comp = target - nums[i];\n        int compHash = abs(comp) % bucketSize;\n        struct HashNode* curr = table[compHash];\n        while (curr) {\n            if (curr->key == comp) {\n                *out1 = curr->val;\n                *out2 = i;\n                return;\n            }\n            curr = curr->next;\n        }\n        int hash = abs(nums[i]) % bucketSize;\n        struct HashNode* newNode = (struct HashNode*)malloc(sizeof(struct HashNode));\n        newNode->key = nums[i]; newNode->val = i; newNode->next = table[hash];\n        table[hash] = newNode;\n    }\n}",
+            },
+            "cpp": {
+                "buggyCode": "#include <vector>\n#include <unordered_map>\nusing namespace std;\n\nvector<int> twoSum(vector<int>& nums, int target) {\n    unordered_map<int, int> seen;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        seen[nums[i]] = i;\n        int comp = target - nums[i];\n        if (seen.find(comp) != seen.end()) {\n            return {seen[comp], i};\n        }\n    }\n    return {};\n}",
+                "correctCode": "#include <vector>\n#include <unordered_map>\nusing namespace std;\n\nvector<int> twoSum(vector<int>& nums, int target) {\n    unordered_map<int, int> seen;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        int comp = target - nums[i];\n        if (seen.find(comp) != seen.end()) {\n            return {seen[comp], i};\n        }\n        seen[nums[i]] = i;\n    }\n    return {};\n}",
+            },
+            "java": {
+                "buggyCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Solution {\n    public int[] twoSum(int[] nums, int target) {\n        Map<Integer, Integer> seen = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            seen.put(nums[i], i);\n            int comp = target - nums[i];\n            if (seen.containsKey(comp)) {\n                return new int[]{seen.get(comp), i};\n            }\n        }\n        return new int[]{};\n    }\n}",
+                "correctCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Solution {\n    public int[] twoSum(int[] nums, int target) {\n        Map<Integer, Integer> seen = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            int comp = target - nums[i];\n            if (seen.containsKey(comp)) {\n                return new int[]{seen.get(comp), i};\n            }\n            seen.put(nums[i], i);\n        }\n        return new int[]{};\n    }\n}",
+            },
+        },
+    },
+    {
+        "id": "q_hash_longest_consecutive_seq",
+        "title": "Longest Consecutive Sequence",
+        "problemStatement": "Given an unsorted array of integers `nums`, return the length of the longest consecutive elements sequence.\n\nYou must write an algorithm that runs in O(n) time.",
+        "topic": "hashmap",
+        "subtopic": "hashset",
+        "difficulty": "medium",
+        "estimatedTime": 20,
+        "primaryBugType": "logical",
+        "bugConcept": "Starting sequence expansion from every element instead of sequence heads (when num - 1 is not in set), causing O(N^2) degradation or infinite loops",
+        "intendedApproach": "Store all numbers in a HashSet. For each number, check if `num - 1` exists in the set. Only if `num - 1` does NOT exist is `num` the start of a sequence. Count upwards consecutive sequence length from `num`.",
+        "explanation": "If the algorithm expands upwards for every single number in the set regardless of whether `num - 1` is present, elements in long sequences are revisited redundantly O(N^2) times, and conditions checking `num + 1` without anchoring sequence starts lead to timeout.",
+        "constraints": [
+            "0 <= nums.length <= 10^5",
+            "-10^9 <= nums[i] <= 10^9",
+        ],
+        "visibleTestCases": [
+            {
+                "id": 1,
+                "input": "nums = [100,4,200,1,3,2]",
+                "expectedOutput": "4",
+                "isHidden": False,
+                "explanation": "The longest consecutive elements sequence is [1, 2, 3, 4]. Therefore its length is 4.",
+            },
+            {
+                "id": 2,
+                "input": "nums = [0,3,7,2,5,8,4,6,0,1]",
+                "expectedOutput": "9",
+                "isHidden": False,
+                "explanation": "The longest consecutive elements sequence is [0, 1, 2, 3, 4, 5, 6, 7, 8]. Therefore its length is 9.",
+            },
+        ],
+        "hiddenTestCases": [
+            {
+                "id": 3,
+                "input": "nums = []",
+                "expectedOutput": "0",
+                "isHidden": True,
+            },
+            {
+                "id": 4,
+                "input": "nums = [9,1,4,7,3,-1,0,5,8,-1,6]",
+                "expectedOutput": "7",
+                "isHidden": True,
+            },
+            {
+                "id": 5,
+                "input": "nums = [1,2,0,1]",
+                "expectedOutput": "3",
+                "isHidden": True,
+            },
+        ],
+        "expectedComplexity": {
+            "time": "O(N)",
+            "space": "O(N)",
+        },
+        "tags": [
+            "hashmap",
+            "hashset",
+            "arrays",
+            "medium",
+        ],
+        "visualData": {
+            "type": "array",
+            "title": "Sequence Head Anchors",
+            "data": [
+                100,
+                4,
+                200,
+                1,
+                3,
+                2,
+            ],
+        },
+        "implementations": {
+            "c": {
+                "buggyCode": "#include <stdlib.h>\n\nint longestConsecutive(int* nums, int n) {\n    if (n == 0) return 0;\n    int maxLen = 0;\n    for (int i = 0; i < n; i++) {\n        int cur = nums[i];\n        int len = 1;\n        int found = 1;\n        while (found) {\n            found = 0;\n            for (int j = 0; j < n; j++) {\n                if (nums[j] == cur + 1) {\n                    cur++; len++; found = 1; break;\n                }\n            }\n        }\n        if (len > maxLen) maxLen = len;\n    }\n    return maxLen;\n}",
+                "correctCode": "#include <stdlib.h>\n\nint cmp(const void* a, const void* b) {\n    long diff = (long)*(int*)a - (long)*(int*)b;\n    return (diff > 0) - (diff < 0);\n}\n\nint longestConsecutive(int* nums, int n) {\n    if (n == 0) return 0;\n    qsort(nums, n, sizeof(int), cmp);\n    int maxLen = 1, curLen = 1;\n    for (int i = 1; i < n; i++) {\n        if (nums[i] == nums[i - 1]) continue;\n        if (nums[i] == nums[i - 1] + 1) {\n            curLen++;\n        } else {\n            curLen = 1;\n        }\n        if (curLen > maxLen) maxLen = curLen;\n    }\n    return maxLen;\n}",
+            },
+            "cpp": {
+                "buggyCode": "#include <vector>\n#include <unordered_set>\n#include <algorithm>\nusing namespace std;\n\nint longestConsecutive(vector<int>& nums) {\n    unordered_set<int> numSet(nums.begin(), nums.end());\n    int maxLen = 0;\n    for (int num : numSet) {\n        if (numSet.count(num - 1)) {\n            int currNum = num;\n            int currStreak = 1;\n            while (numSet.count(currNum + 1)) {\n                currNum++;\n                currStreak++;\n            }\n            maxLen = max(maxLen, currStreak);\n        }\n    }\n    return maxLen;\n}",
+                "correctCode": "#include <vector>\n#include <unordered_set>\n#include <algorithm>\nusing namespace std;\n\nint longestConsecutive(vector<int>& nums) {\n    unordered_set<int> numSet(nums.begin(), nums.end());\n    int maxLen = 0;\n    for (int num : numSet) {\n        if (!numSet.count(num - 1)) {\n            int currNum = num;\n            int currStreak = 1;\n            while (numSet.count(currNum + 1)) {\n                currNum++;\n                currStreak++;\n            }\n            maxLen = max(maxLen, currStreak);\n        }\n    }\n    return maxLen;\n}",
+            },
+            "java": {
+                "buggyCode": "import java.util.HashSet;\nimport java.util.Set;\n\nclass Solution {\n    public int longestConsecutive(int[] nums) {\n        Set<Integer> numSet = new HashSet<>();\n        for (int num : nums) numSet.add(num);\n        int maxLen = 0;\n        for (int num : numSet) {\n            if (numSet.contains(num - 1)) {\n                int currNum = num;\n                int currStreak = 1;\n                while (numSet.contains(currNum + 1)) {\n                    currNum++;\n                    currStreak++;\n                }\n                maxLen = Math.max(maxLen, currStreak);\n            }\n        }\n        return maxLen;\n    }\n}",
+                "correctCode": "import java.util.HashSet;\nimport java.util.Set;\n\nclass Solution {\n    public int longestConsecutive(int[] nums) {\n        Set<Integer> numSet = new HashSet<>();\n        for (int num : nums) numSet.add(num);\n        int maxLen = 0;\n        for (int num : numSet) {\n            if (!numSet.contains(num - 1)) {\n                int currNum = num;\n                int currStreak = 1;\n                while (numSet.contains(currNum + 1)) {\n                    currNum++;\n                    currStreak++;\n                }\n                maxLen = Math.max(maxLen, currStreak);\n            }\n        }\n        return maxLen;\n    }\n}",
+            },
+        },
+    },
+    {
+        "id": "q_hash_subarray_sum_equals_k",
+        "title": "Subarray Sum Equals K",
+        "problemStatement": "Given an array of integers `nums` and an integer `k`, return the total number of subarrays whose sum equals to `k`.\n\nA subarray is a contiguous non-empty sequence of elements within an array.",
+        "topic": "hashmap",
+        "subtopic": "prefix-sum",
+        "difficulty": "medium",
+        "estimatedTime": 20,
+        "primaryBugType": "incorrect initialization",
+        "bugConcept": "Missing initial prefix sum frequency entry {0: 1}, failing to count subarrays starting from index 0",
+        "intendedApproach": "Maintain running prefixSum and a hash map tracking prefixSum frequencies. Initialize map with {0: 1}. For each element, add map[prefixSum - k] to total count, then increment map[prefixSum].",
+        "explanation": "If a contiguous prefix from index 0 to i sums directly to k, `prefixSum - k == 0`. Without the initial `{0: 1}` entry in the hash map, all valid subarrays starting at index 0 will be missed.",
+        "constraints": [
+            "1 <= nums.length <= 2 * 10^4",
+            "-1000 <= nums[i] <= 1000",
+            "-10^7 <= k <= 10^7",
+        ],
+        "visibleTestCases": [
+            {
+                "id": 1,
+                "input": "nums = [1,1,1], k = 2",
+                "expectedOutput": "2",
+                "isHidden": False,
+                "explanation": "There are two subarrays that sum to 2: [1,1] starting at index 0 and [1,1] starting at index 1.",
+            },
+            {
+                "id": 2,
+                "input": "nums = [1,2,3], k = 3",
+                "expectedOutput": "2",
+                "isHidden": False,
+                "explanation": "Subarrays [1,2] and [3] each sum to 3, giving a count of 2.",
+            },
+        ],
+        "hiddenTestCases": [
+            {
+                "id": 3,
+                "input": "nums = [1,-1,0], k = 0",
+                "expectedOutput": "3",
+                "isHidden": True,
+            },
+            {
+                "id": 4,
+                "input": "nums = [3], k = 3",
+                "expectedOutput": "1",
+                "isHidden": True,
+            },
+            {
+                "id": 5,
+                "input": "nums = [-1,-1,1], k = 0",
+                "expectedOutput": "1",
+                "isHidden": True,
+            },
+        ],
+        "expectedComplexity": {
+            "time": "O(N)",
+            "space": "O(N)",
+        },
+        "tags": [
+            "hashmap",
+            "prefix-sum",
+            "arrays",
+            "medium",
+        ],
+        "visualData": {
+            "type": "array",
+            "title": "Prefix Sum Tracker",
+            "data": [
+                1,
+                1,
+                1,
+            ],
+        },
+        "implementations": {
+            "c": {
+                "buggyCode": "#include <stdlib.h>\n\nstruct Node { int key; int count; struct Node* next; };\n\nint subarraySum(int* nums, int n, int k) {\n    int count = 0, sum = 0;\n    for (int i = 0; i < n; i++) {\n        sum += nums[i];\n        int innerSum = 0;\n        for (int j = i; j >= 1; j--) {\n            innerSum += nums[j];\n            if (innerSum == k) count++;\n        }\n    }\n    return count;\n}",
+                "correctCode": "#include <stdlib.h>\n\nint subarraySum(int* nums, int n, int k) {\n    int count = 0;\n    for (int i = 0; i < n; i++) {\n        int sum = 0;\n        for (int j = i; j < n; j++) {\n            sum += nums[j];\n            if (sum == k) count++;\n        }\n    }\n    return count;\n}",
+            },
+            "cpp": {
+                "buggyCode": "#include <vector>\n#include <unordered_map>\nusing namespace std;\n\nint subarraySum(vector<int>& nums, int k) {\n    unordered_map<int, int> prefixCounts;\n    int sum = 0, count = 0;\n    for (int num : nums) {\n        sum += num;\n        if (prefixCounts.find(sum - k) != prefixCounts.end()) {\n            count += prefixCounts[sum - k];\n        }\n        prefixCounts[sum]++;\n    }\n    return count;\n}",
+                "correctCode": "#include <vector>\n#include <unordered_map>\nusing namespace std;\n\nint subarraySum(vector<int>& nums, int k) {\n    unordered_map<int, int> prefixCounts;\n    prefixCounts[0] = 1;\n    int sum = 0, count = 0;\n    for (int num : nums) {\n        sum += num;\n        if (prefixCounts.find(sum - k) != prefixCounts.end()) {\n            count += prefixCounts[sum - k];\n        }\n        prefixCounts[sum]++;\n    }\n    return count;\n}",
+            },
+            "java": {
+                "buggyCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Solution {\n    public int subarraySum(int[] nums, int k) {\n        Map<Integer, Integer> prefixCounts = new HashMap<>();\n        int sum = 0, count = 0;\n        for (int num : nums) {\n            sum += num;\n            if (prefixCounts.containsKey(sum - k)) {\n                count += prefixCounts.get(sum - k);\n            }\n            prefixCounts.put(sum, prefixCounts.getOrDefault(sum, 0) + 1);\n        }\n        return count;\n    }\n}",
+                "correctCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Solution {\n    public int subarraySum(int[] nums, int k) {\n        Map<Integer, Integer> prefixCounts = new HashMap<>();\n        prefixCounts.put(0, 1);\n        int sum = 0, count = 0;\n        for (int num : nums) {\n            sum += num;\n            if (prefixCounts.containsKey(sum - k)) {\n                count += prefixCounts.get(sum - k);\n            }\n            prefixCounts.put(sum, prefixCounts.getOrDefault(sum, 0) + 1);\n        }\n        return count;\n    }\n}",
+            },
+        },
+    },
+    {
+        "id": "q_hash_group_anagrams",
+        "title": "Group Anagrams",
+        "problemStatement": "Given an array of strings `strs`, group the anagrams together. You can return the answer in any order.\n\nAn Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.",
+        "topic": "hashmap",
+        "subtopic": "hashmap",
+        "difficulty": "medium",
+        "estimatedTime": 20,
+        "primaryBugType": "logical",
+        "bugConcept": "Modifying original string during sorting key creation, corrupting the stored output words",
+        "intendedApproach": "For each word, create a sorted copy to use as the hash key. Store the original unmodified word in the map list under that key.",
+        "explanation": "If the sorting step operates in-place on the original string in `strs[i]`, all grouped anagram outputs will contain sorted letters like [\"aet\", \"aet\", \"aet\"] instead of [\"eat\", \"tea\", \"ate\"].",
+        "constraints": [
+            "1 <= strs.length <= 10^4",
+            "0 <= strs[i].length <= 100",
+            "strs[i] consists of lowercase English letters.",
+        ],
+        "visibleTestCases": [
+            {
+                "id": 1,
+                "input": "strs = [\"eat\",\"tea\",\"tan\",\"ate\",\"nat\",\"bat\"]",
+                "expectedOutput": "[[\"bat\"],[\"nat\",\"tan\"],[\"ate\",\"eat\",\"tea\"]]",
+                "isHidden": False,
+                "explanation": "\"eat\", \"tea\", and \"ate\" are anagrams. \"tan\" and \"nat\" are anagrams. \"bat\" is in its own group.",
+            },
+            {
+                "id": 2,
+                "input": "strs = [\"\"]",
+                "expectedOutput": "[[\"\"]]",
+                "isHidden": False,
+                "explanation": "The single empty string forms its own anagram group [[\"\"]].",
+            },
+        ],
+        "hiddenTestCases": [
+            {
+                "id": 3,
+                "input": "strs = [\"a\"]",
+                "expectedOutput": "[[\"a\"]]",
+                "isHidden": True,
+            },
+            {
+                "id": 4,
+                "input": "strs = [\"ab\",\"ba\",\"abc\",\"cba\"]",
+                "expectedOutput": "[[\"ab\",\"ba\"],[\"abc\",\"cba\"]]",
+                "isHidden": True,
+            },
+            {
+                "id": 5,
+                "input": "strs = [\"stop\",\"pots\",\"tops\",\"spot\"]",
+                "expectedOutput": "[[\"pots\",\"spot\",\"stop\",\"tops\"]]",
+                "isHidden": True,
+            },
+        ],
+        "expectedComplexity": {
+            "time": "O(N * K log K)",
+            "space": "O(N * K)",
+        },
+        "tags": [
+            "hashmap",
+            "strings",
+            "sorting",
+            "medium",
+        ],
+        "visualData": {
+            "type": "array",
+            "title": "Anagram Hash Key Buckets",
+            "data": [
+                "eat",
+                "tea",
+                "tan",
+                "ate",
+                "nat",
+                "bat",
+            ],
+        },
+        "implementations": {
+            "c": {
+                "buggyCode": "#include <string.h>\n#include <stdlib.h>\n\nint cmpChar(const void* a, const void* b) {\n    return *(char*)a - *(char*)b;\n}\n\n// Group anagrams helper\nvoid groupAnagramsDemo(char** strs, int n, char*** res, int* resSizes) {\n    for (int i = 0; i < n; i++) {\n        qsort(strs[i], strlen(strs[i]), sizeof(char), cmpChar);\n    }\n}",
+                "correctCode": "#include <string.h>\n#include <stdlib.h>\n\nint cmpChar(const void* a, const void* b) {\n    return *(char*)a - *(char*)b;\n}\n\nvoid groupAnagramsDemo(char** strs, int n, char*** res, int* resSizes) {\n    for (int i = 0; i < n; i++) {\n        char key[128];\n        strcpy(key, strs[i]);\n        qsort(key, strlen(key), sizeof(char), cmpChar);\n    }\n}",
+            },
+            "cpp": {
+                "buggyCode": "#include <vector>\n#include <string>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\n\nvector<vector<string>> groupAnagrams(vector<string>& strs) {\n    unordered_map<string, vector<string>> map;\n    for (string& s : strs) {\n        sort(s.begin(), s.end());\n        map[s].push_back(s);\n    }\n    vector<vector<string>> res;\n    for (auto& pair : map) res.push_back(pair.second);\n    return res;\n}",
+                "correctCode": "#include <vector>\n#include <string>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\n\nvector<vector<string>> groupAnagrams(vector<string>& strs) {\n    unordered_map<string, vector<string>> map;\n    for (const string& s : strs) {\n        string key = s;\n        sort(key.begin(), key.end());\n        map[key].push_back(s);\n    }\n    vector<vector<string>> res;\n    for (auto& pair : map) res.push_back(pair.second);\n    return res;\n}",
+            },
+            "java": {
+                "buggyCode": "import java.util.*;\n\nclass Solution {\n    public List<List<String>> groupAnagrams(String[] strs) {\n        Map<String, List<String>> map = new HashMap<>();\n        for (String s : strs) {\n            char[] chars = s.toCharArray();\n            Arrays.sort(chars);\n            String key = new String(chars);\n            if (!map.containsKey(key)) map.put(key, new ArrayList<>());\n            map.get(key).add(key);\n        }\n        return new ArrayList<>(map.values());\n    }\n}",
+                "correctCode": "import java.util.*;\n\nclass Solution {\n    public List<List<String>> groupAnagrams(String[] strs) {\n        Map<String, List<String>> map = new HashMap<>();\n        for (String s : strs) {\n            char[] chars = s.toCharArray();\n            Arrays.sort(chars);\n            String key = new String(chars);\n            if (!map.containsKey(key)) map.put(key, new ArrayList<>());\n            map.get(key).add(s);\n        }\n        return new ArrayList<>(map.values());\n    }\n}",
+            },
+        },
+    },
+    {
+        "id": "q_hash_first_unique_char",
+        "title": "First Unique Character in a String",
+        "problemStatement": "Given a string `s`, find the first non-repeating character in it and return its index.\n\nIf it does not exist, return `-1`.",
+        "topic": "hashmap",
+        "subtopic": "frequency-count",
+        "difficulty": "easy",
+        "estimatedTime": 15,
+        "primaryBugType": "logical",
+        "bugConcept": "Iterating over hash map keys in insertion order rather than original string index sequence",
+        "intendedApproach": "First pass: record frequencies in frequency array/map. Second pass: iterate through indices i from 0 to n-1 in string s, returning the first index where count[s[i]] == 1.",
+        "explanation": "If the second pass iterates over unordered/alphabetical bucket entries instead of the string indices 0 to n-1, it returns the first unique character alphabetically instead of the earliest in sequence.",
+        "constraints": [
+            "1 <= s.length <= 10^5",
+            "s consists of only lowercase English letters.",
+        ],
+        "visibleTestCases": [
+            {
+                "id": 1,
+                "input": "s = \"leetcode\"",
+                "expectedOutput": "0",
+                "isHidden": False,
+                "explanation": "The character 'l' at index 0 is the first character that does not occur at any other index.",
+            },
+            {
+                "id": 2,
+                "input": "s = \"loveleetcode\"",
+                "expectedOutput": "2",
+                "isHidden": False,
+                "explanation": "The character 'v' at index 2 is the first non-repeating character.",
+            },
+        ],
+        "hiddenTestCases": [
+            {
+                "id": 3,
+                "input": "s = \"aabb\"",
+                "expectedOutput": "-1",
+                "isHidden": True,
+            },
+            {
+                "id": 4,
+                "input": "s = \"z\"",
+                "expectedOutput": "0",
+                "isHidden": True,
+            },
+            {
+                "id": 5,
+                "input": "s = \"dddccdbba\"",
+                "expectedOutput": "8",
+                "isHidden": True,
+            },
+        ],
+        "expectedComplexity": {
+            "time": "O(N)",
+            "space": "O(1)",
+        },
+        "tags": [
+            "hashmap",
+            "strings",
+            "easy",
+        ],
+        "visualData": {
+            "type": "array",
+            "title": "Character Occurrence Counts",
+            "data": [
+                "l:1",
+                "e:3",
+                "t:1",
+                "c:1",
+                "o:1",
+                "d:1",
+            ],
+        },
+        "implementations": {
+            "c": {
+                "buggyCode": "#include <string.h>\n\nint firstUniqChar(char* s) {\n    int count[26] = {0};\n    for (int i = 0; s[i] != '\\0'; i++) count[s[i] - 'a']++;\n    for (int i = 0; i < 26; i++) {\n        if (count[i] == 1) {\n            for (int j = 0; s[j] != '\\0'; j++) {\n                if (s[j] - 'a' == i) return j;\n            }\n        }\n    }\n    return -1;\n}",
+                "correctCode": "#include <string.h>\n\nint firstUniqChar(char* s) {\n    int count[26] = {0};\n    for (int i = 0; s[i] != '\\0'; i++) count[s[i] - 'a']++;\n    for (int i = 0; s[i] != '\\0'; i++) {\n        if (count[s[i] - 'a'] == 1) return i;\n    }\n    return -1;\n}",
+            },
+            "cpp": {
+                "buggyCode": "#include <string>\n#include <vector>\nusing namespace std;\n\nint firstUniqChar(string s) {\n    vector<int> count(26, 0);\n    for (char c : s) count[c - 'a']++;\n    for (int i = 0; i < 26; i++) {\n        if (count[i] == 1) {\n            for (int j = 0; j < (int)s.length(); j++) {\n                if (s[j] - 'a' == i) return j;\n            }\n        }\n    }\n    return -1;\n}",
+                "correctCode": "#include <string>\n#include <vector>\nusing namespace std;\n\nint firstUniqChar(string s) {\n    vector<int> count(26, 0);\n    for (char c : s) count[c - 'a']++;\n    for (int i = 0; i < (int)s.length(); i++) {\n        if (count[s[i] - 'a'] == 1) return i;\n    }\n    return -1;\n}",
+            },
+            "java": {
+                "buggyCode": "class Solution {\n    public int firstUniqChar(String s) {\n        int[] count = new int[26];\n        for (int i = 0; i < s.length(); i++) count[s.charAt(i) - 'a']++;\n        for (int i = 0; i < 26; i++) {\n            if (count[i] == 1) {\n                for (int j = 0; j < s.length(); j++) {\n                    if (s.charAt(j) - 'a' == i) return j;\n                }\n            }\n        }\n        return -1;\n    }\n}",
+                "correctCode": "class Solution {\n    public int firstUniqChar(String s) {\n        int[] count = new int[26];\n        for (int i = 0; i < s.length(); i++) count[s.charAt(i) - 'a']++;\n        for (int i = 0; i < s.length(); i++) {\n            if (count[s.charAt(i) - 'a'] == 1) return i;\n        }\n        return -1;\n    }\n}",
+            },
+        },
+    },
+    {
+        "id": "q_hash_subarray_divisible_by_k",
+        "title": "Subarray Sums Divisible by K",
+        "problemStatement": "Given an integer array `nums` and an integer `k`, return the number of non-empty subarrays that have a sum divisible by `k`.\n\nA subarray is a contiguous part of an array.",
+        "topic": "hashmap",
+        "subtopic": "prefix-sum",
+        "difficulty": "medium",
+        "estimatedTime": 20,
+        "primaryBugType": "boundary",
+        "bugConcept": "Negative modulo handling bug in C/C++/Java (e.g. -4 % 5 = -4 instead of positive remainder 1)",
+        "intendedApproach": "Compute running prefix sum. Normalize modulo: `rem = (prefixSum % k + k) % k`. Accumulate count += map[rem], then map[rem]++.",
+        "explanation": "In C, C++, and Java, `-4 % 5` evaluates to `-4`. In modular arithmetic, `-4` is congruent to `1 (mod 5)`. Without `(sum % k + k) % k`, negative remainders land in separate buckets and miss valid divisible subarrays.",
+        "constraints": [
+            "1 <= nums.length <= 3 * 10^4",
+            "-10^4 <= nums[i] <= 10^4",
+            "2 <= k <= 10^4",
+        ],
+        "visibleTestCases": [
+            {
+                "id": 1,
+                "input": "nums = [4,5,0,-2,-3,1], k = 5",
+                "expectedOutput": "7",
+                "isHidden": False,
+                "explanation": "There are 7 subarrays with a sum divisible by k = 5: [4, 5, 0, -2, -3, 1], [5], [5, 0], [5, 0, -2, -3], [0], [0, -2, -3], [-2, -3].",
+            },
+            {
+                "id": 2,
+                "input": "nums = [5], k = 9",
+                "expectedOutput": "0",
+                "isHidden": False,
+                "explanation": "No non-empty subarray sums to a multiple of 9, so count is 0.",
+            },
+        ],
+        "hiddenTestCases": [
+            {
+                "id": 3,
+                "input": "nums = [-1,2,9], k = 2",
+                "expectedOutput": "2",
+                "isHidden": True,
+            },
+            {
+                "id": 4,
+                "input": "nums = [-5], k = 5",
+                "expectedOutput": "1",
+                "isHidden": True,
+            },
+            {
+                "id": 5,
+                "input": "nums = [7,-5,5,-8,1,4], k = 3",
+                "expectedOutput": "11",
+                "isHidden": True,
+            },
+        ],
+        "expectedComplexity": {
+            "time": "O(N)",
+            "space": "O(K)",
+        },
+        "tags": [
+            "hashmap",
+            "prefix-sum",
+            "math",
+            "medium",
+        ],
+        "visualData": {
+            "type": "array",
+            "title": "Normalized Modulo Prefix Buckets",
+            "data": [
+                4,
+                5,
+                0,
+                -2,
+                -3,
+                1,
+            ],
+        },
+        "implementations": {
+            "c": {
+                "buggyCode": "int subarraysDivByK(int* nums, int n, int k) {\n    int count[10005] = {0};\n    count[0] = 1;\n    int sum = 0, res = 0;\n    for (int i = 0; i < n; i++) {\n        sum += nums[i];\n        int rem = sum % k;\n        if (rem < 0) rem = -rem;\n        res += count[rem];\n        count[rem]++;\n    }\n    return res;\n}",
+                "correctCode": "int subarraysDivByK(int* nums, int n, int k) {\n    int count[10005] = {0};\n    count[0] = 1;\n    int sum = 0, res = 0;\n    for (int i = 0; i < n; i++) {\n        sum += nums[i];\n        int rem = (sum % k + k) % k;\n        res += count[rem];\n        count[rem]++;\n    }\n    return res;\n}",
+            },
+            "cpp": {
+                "buggyCode": "#include <vector>\n#include <unordered_map>\nusing namespace std;\n\nint subarraysDivByK(vector<int>& nums, int k) {\n    vector<int> count(k, 0);\n    count[0] = 1;\n    int sum = 0, res = 0;\n    for (int num : nums) {\n        sum += num;\n        int rem = sum % k;\n        if (rem < 0) rem = -rem;\n        res += count[rem];\n        count[rem]++;\n    }\n    return res;\n}",
+                "correctCode": "#include <vector>\nusing namespace std;\n\nint subarraysDivByK(vector<int>& nums, int k) {\n    vector<int> count(k, 0);\n    count[0] = 1;\n    int sum = 0, res = 0;\n    for (int num : nums) {\n        sum += num;\n        int rem = (sum % k + k) % k;\n        res += count[rem];\n        count[rem]++;\n    }\n    return res;\n}",
+            },
+            "java": {
+                "buggyCode": "class Solution {\n    public int subarraysDivByK(int[] nums, int k) {\n        int[] count = new int[k];\n        count[0] = 1;\n        int sum = 0, res = 0;\n        for (int num : nums) {\n            sum += num;\n            int rem = sum % k;\n            if (rem < 0) rem = -rem;\n            res += count[rem];\n            count[rem]++;\n        }\n        return res;\n    }\n}",
+                "correctCode": "class Solution {\n    public int subarraysDivByK(int[] nums, int k) {\n        int[] count = new int[k];\n        count[0] = 1;\n        int sum = 0, res = 0;\n        for (int num : nums) {\n            sum += num;\n            int rem = (sum % k + k) % k;\n            res += count[rem];\n            count[rem]++;\n        }\n        return res;\n    }\n}",
+            },
+        },
+    },
+]
